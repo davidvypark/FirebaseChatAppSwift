@@ -11,5 +11,7 @@ target 'FirebaseChatAppSwift' do
   pod 'Firebase/Auth'
   pod 'GoogleSignIn'
   pod 'JSQMessagesViewController'
+  pod 'Firebase/Database'
+  pod 'Firebase/Storage'
 
 end
