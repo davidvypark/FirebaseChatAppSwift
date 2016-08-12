@@ -17,10 +17,25 @@ class LogInViewController: UIViewController, GIDSignInUIDelegate, GIDSignInDeleg
 		GIDSignIn.sharedInstance().uiDelegate = self
 		GIDSignIn.sharedInstance().delegate = self
 	}
+	
+	override func viewDidAppear(animated: Bool) {
+		super.viewDidAppear(animated)
+		
+		print(FIRAuth.auth()?.currentUser)
+		//check if user is already authenticated
+		// we can use a splash view that forks to either login or main screen
+		FIRAuth.auth()?.addAuthStateDidChangeListener({ (auth: FIRAuth, user: FIRUser?) in
+			if user != nil {
+				print(user)
+				Helper.helper.switchToNavigationViewController()
+			} else {
+				print("Unauthorized")
+			}
+		})
+	}
 
 	@IBAction func anonymouslyLoginTapped(sender: AnyObject) {
 		Helper.helper.anonymouslyLogin()
-		
 	}
 	
 	@IBAction func facebookLoginTapped(sender: AnyObject) {
