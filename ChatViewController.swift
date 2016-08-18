@@ -17,38 +17,63 @@ import FirebaseAuth
 class ChatViewController: JSQMessagesViewController {
 	
 	var messages = [JSQMessage]()
+	var avatarDict = [String: JSQMessagesAvatarImage]()
 	
 	var messageRef = FIRDatabase.database().reference().child("messages")
 	
 	override func viewDidLoad() {
 		super.viewDidLoad()
 		
-		let currentUser = FIRAuth.auth()?.currentUser
-
-		self.senderId = currentUser!.uid
-		self.senderDisplayName = "David"
+		if let currentUser = FIRAuth.auth()?.currentUser {
+			self.senderId = currentUser.uid
+			self.senderDisplayName = "TEMP"
+				
+				if currentUser.anonymous == true {
+					self.senderDisplayName = "DavidAnon"
+				} else {
+					self.senderDisplayName = "\(currentUser.displayName!)"		//change this to Facebook USERNAME
+				}
+		}
 		
-		
-//		messageRef.childByAutoId().setValue("first message")
-//		messageRef.childByAutoId().setValue("second message")
-		
-//		messageRef.observeEventType(FIRDataEventType.ChildAdded) { (snapshot: FIRDataSnapshot) in
-//			
-//			print("test")
-//			if let dict = snapshot.value as? String {
-//				print(dict)
-//			}
-//		}
-	
 		observeMessages()
 	}
 	
+	func observeUsers(id: String) {
+		
+		FIRDatabase.database().reference().child("users").child(id).observeEventType(.Value, withBlock: {
+			snapshot in
+			if let dict = snapshot.value as? [String: AnyObject] {
+				let avatarUrl = dict["profileUrl"] as! String
+				print("profileUrl = \(avatarUrl)")
+				self.setupAvatar(avatarUrl, messageId: id)
+			}
+		})
+	}
+	
+	func setupAvatar(url: String, messageId: String) {
+		
+		if url != "" {
+			let fileUrl = NSURL(string: url)
+			let data = NSData(contentsOfURL: fileUrl!)
+			let image = UIImage(data: data!)
+			let userImg = JSQMessagesAvatarImageFactory.avatarImageWithImage(image, diameter: 30)
+			avatarDict[messageId] = userImg
+			
+		} else {
+			avatarDict[messageId] = JSQMessagesAvatarImageFactory.avatarImageWithImage(UIImage(named: "ProfilePicture"), diameter: 30)
+			
+		}
+		collectionView.reloadData()
+	}
+	
 	func observeMessages() {
-		messageRef.observeEventType(.ChildAdded, withBlock: { (snapshot) in
+		messageRef.observeEventType(.ChildAdded, withBlock: { snapshot in
 			if let dict = snapshot.value as? [String: AnyObject] {
 				let mediaType = dict["MediaType"] as! String
 				let senderId = dict["senderId"] as! String
 				let senderName = dict["senderName"] as! String
+				
+				self.observeUsers(senderId)
 				
 				switch mediaType {
 				case "TEXT":
@@ -159,7 +184,12 @@ class ChatViewController: JSQMessagesViewController {
 	}
 	
 	override func collectionView(collectionView: JSQMessagesCollectionView!, avatarImageDataForItemAtIndexPath indexPath: NSIndexPath!) -> JSQMessageAvatarImageDataSource! {
-		return nil
+		let message = messages[indexPath.item]
+		
+		print(avatarDict[message.senderId])
+		return avatarDict[message.senderId]
+		
+		//return JSQMessagesAvatarImageFactory.avatarImageWithImage(UIImage(named: "ProfilePicture"), diameter: 30)
 	}
 	
 	override func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {

@@ -10,6 +10,7 @@ import Foundation
 import FirebaseAuth
 import UIKit
 import GoogleSignIn
+import FirebaseDatabase
 
 class Helper {
 	static let helper = Helper()
@@ -42,6 +43,10 @@ class Helper {
 			} else {
 				print(user?.email)
 				print(user?.displayName)
+				print(user?.photoURL)
+				
+				let newUser = FIRDatabase.database().reference().child("users").child(user!.uid)
+				newUser.setValue(["displayname" : "\(user!.displayName!)", "id" : "\(user!.uid)", "profileUrl" : "\(user!.photoURL!)"])
 				
 				self.switchToNavigationViewController()
 			}
